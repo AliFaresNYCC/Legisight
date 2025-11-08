@@ -1,3 +1,7 @@
+# Prerequisites  
+- Node.js (v16 or higher recommended)
+- npm (comes with Node.js)
+
 # Startup
 - cd into /frontend and run `npm install`
 - cd into /proxy and run `npm install`
