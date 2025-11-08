@@ -1,0 +1,32 @@
+* {
+  box-sizing: border-box !important;
+}
+.chrono-wrapper {
+  all: initial;
+  * {
+    all: unset;
+  }
+}
+
+.chrono-wrapper * {
+  all: revert;
+}
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+}
+div[aria-label="Additional timeline controls"] {
+  display: none !important;
+}
+
+.add-to-history,
+.remove-from-history {
+  display: none;
+}
+
+.matter-card:hover .add-to-history,
+.watchlist-matter-card:hover .remove-from-history {
+  display: block;
+}
