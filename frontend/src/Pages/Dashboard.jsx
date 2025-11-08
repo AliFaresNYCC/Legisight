@@ -42,7 +42,7 @@ import { Chrono } from "react-chrono";
 import "react-chrono/dist/style.css";
 import { getMatterHistory, getFilteredMatters } from "../api";
 
-function Dashboard({ pastSixMonOfMatters, loading }) {
+function Dashboard({ lastThousandMatters, loading }) {
   const [searchBy, setSearchBy] = useState("Law #");
   const [query, setQuery] = useState(null);
   const [filteredMatters, setFilteredMatters] = useState(null);
@@ -479,7 +479,7 @@ function Dashboard({ pastSixMonOfMatters, loading }) {
                 </Flex>
               </Box>
             )
-          ) : pastSixMonOfMatters?.length > 0 ? (
+          ) : lastThousandMatters?.length > 0 ? (
             <VStack
               spacing={2}
               w={"100%"}
@@ -490,7 +490,7 @@ function Dashboard({ pastSixMonOfMatters, loading }) {
               align={"stretch"}
               overflowY="auto"
             >
-              {pastSixMonOfMatters.map((matter, idx) => (
+              {lastThousandMatters.map((matter, idx) => (
                 <Card
                   className="matter-card"
                   key={idx}

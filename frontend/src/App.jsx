@@ -1,33 +1,27 @@
 import { useState, useEffect } from "react";
 import "./App.css";
-import { getPastSixMonOfMatters, getMatters, getInProgMatters } from "./api";
+import { getLastThousandMatters } from "./api";
 import { Heading, Flex, Box } from "@chakra-ui/react";
 import Dashboard from "./Pages/Dashboard";
 
 function App() {
-  const [count, setCount] = useState(0);
-  const [matters, setMatters] = useState([]);
-  const [pastSixMonOfMatters, setPastSixMonOfMatters] = useState([]);
-  const [inProgMatters, setInProgMatters] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [lastThousandMatters, setLastThousandMatters] = useState([]);
 
-  function decodeText(html) {
-    const placeholderForTxt = document.createElement("textarea");
-    placeholderForTxt.innerHTML = html;
-    return placeholderForTxt.value;
-  }
   async function handleGetRecentMatters() {
     setLoading(true);
     try {
-      const [pastSix, introMatters, inProgress] = await Promise.all([
-        getPastSixMonOfMatters(),
-        getMatters(),
-        getInProgMatters(),
-      ]);
-      // Matters & inprog matters for future improvement in filtering
-      setPastSixMonOfMatters(pastSix);
-      setMatters(introMatters);
-      setInProgMatters(inProgress);
+      // const [pastSix, introMatters, inProgress] = await Promise.all([
+      //   getPastSixMonOfMatters(),
+      //   getMatters(),
+      //   getInProgMatters(),
+      // ]);
+      // // Matters & inprog matters for future improvement in filtering
+      // setPastSixMonOfMatters(pastSix);
+      // setMatters(introMatters);
+      // setInProgMatters(inProgress);
+      const lastThousandMattersRes = await getLastThousandMatters();
+      setLastThousandMatters(lastThousandMattersRes);
     } catch (error) {
       console.error("Failed to fetch matters:", error);
     } finally {
@@ -68,25 +62,7 @@ function App() {
         </Heading>
       </Flex>
 
-      <Dashboard pastSixMonOfMatters={pastSixMonOfMatters} loading={loading} />
-      {/*       
-      <Box>
-
-      </Box>
-      <Box>
-        <Heading>Matters</Heading>
-        {matters?.length > 0 &&
-          matters.map((matter) => (
-            <Text>{decodeText(matter.title.rendered)}</Text>
-          ))}
-      </Box>
-      <Box>
-        <Heading>In progress matters</Heading>
-        {inProgMatters?.length > 0 &&
-          inProgMatters.map((matter) => (
-            <Text>{decodeText(matter.title.rendered)}</Text>
-          ))}
-      </Box> */}
+      <Dashboard lastThousandMatters={lastThousandMatters} loading={loading} />
     </div>
   );
 }
