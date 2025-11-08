@@ -27,6 +27,17 @@ div[aria-label="Additional timeline controls"] {
 }
 
 .matter-card:hover .add-to-history,
-.watchlist-matter-card:hover .remove-from-history {
+.watchlist-matter-card:hover .remove-from-history,
+.filtered-matter-card:hover .add-to-history {
   display: block;
+}
+
+div[role="toolbar"][aria-label*="Timeline toolbar"] {
+  /* display: none !important; */
+}
+.timeline-wrapper {
+  min-height: 570px !important;
+}
+.timeline-main-wrapper {
+  min-height: 450px !important;
 }

@@ -24,7 +24,7 @@ function App() {
         getMatters(),
         getInProgMatters(),
       ]);
-
+      // Matters & inprog matters for future improvement in filtering
       setPastSixMonOfMatters(pastSix);
       setMatters(introMatters);
       setInProgMatters(inProgress);

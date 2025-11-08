@@ -20,7 +20,7 @@ app.get("/proxy/matters", async (req, res) => {
 
     // fetch data from legistar with filters
     const response = await axios.get(
-      `https://webapi.legistar.com/v1/nyc/matters?$filter=MatterIntroDate ge datetime'${fromDate}' and MatterIntroDate le datetime'${toDate}'&$orderby=MatterIntroDate desc&$top=10&token=Uvxb0j9syjm3aI8h46DhQvnX5skN4aSUL0x_Ee3ty9M.ew0KICAiVmVyc2lvbiI6IDEsDQogICJOYW1lIjogIk5ZQyByZWFkIHRva2VuIDIwMTcxMDI2IiwNCiAgIkRhdGUiOiAiMjAxNy0xMC0yNlQxNjoyNjo1Mi42ODM0MDYtMDU6MDAiLA0KICAiV3JpdGUiOiBmYWxzZQ0KfQ`
+      `https://webapi.legistar.com/v1/nyc/matters?$filter=MatterIntroDate ge datetime'${fromDate}' and MatterIntroDate le datetime'${toDate}'&$orderby=MatterIntroDate desc&$top=1000&token=Uvxb0j9syjm3aI8h46DhQvnX5skN4aSUL0x_Ee3ty9M.ew0KICAiVmVyc2lvbiI6IDEsDQogICJOYW1lIjogIk5ZQyByZWFkIHRva2VuIDIwMTcxMDI2IiwNCiAgIkRhdGUiOiAiMjAxNy0xMC0yNlQxNjoyNjo1Mi42ODM0MDYtMDU6MDAiLA0KICAiV3JpdGUiOiBmYWxzZQ0KfQ`
     );
 
     res.json(response.data);
@@ -33,7 +33,7 @@ app.get("/proxy/filtered-matters", async (req, res) => {
   try {
     const { filter } = req.query;
     const response = await axios.get(
-      `https://webapi.legistar.com/v1/nyc/matters?token=Uvxb0j9syjm3aI8h46DhQvnX5skN4aSUL0x_Ee3ty9M.ew0KICAiVmVyc2lvbiI6IDEsDQogICJOYW1lIjogIk5ZQyByZWFkIHRva2VuIDIwMTcxMDI2IiwNCiAgIkRhdGUiOiAiMjAxNy0xMC0yNlQxNjoyNjo1Mi42ODM0MDYtMDU6MDAiLA0KICAiV3JpdGUiOiBmYWxzZQ0KfQ&$filter=${filter}&$top=10`
+      `https://webapi.legistar.com/v1/nyc/matters?token=Uvxb0j9syjm3aI8h46DhQvnX5skN4aSUL0x_Ee3ty9M.ew0KICAiVmVyc2lvbiI6IDEsDQogICJOYW1lIjogIk5ZQyByZWFkIHRva2VuIDIwMTcxMDI2IiwNCiAgIkRhdGUiOiAiMjAxNy0xMC0yNlQxNjoyNjo1Mi42ODM0MDYtMDU6MDAiLA0KICAiV3JpdGUiOiBmYWxzZQ0KfQ&$filter=${filter}&$top=1000`
     );
 
     res.json(response.data);

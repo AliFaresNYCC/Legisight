@@ -33,6 +33,7 @@ import {
   PopoverTrigger,
   Text,
   VStack,
+  Portal,
 } from "@chakra-ui/react";
 import { keyframes } from "@emotion/react";
 import { ClockPlus, Funnel, Trash2 } from "lucide-react";
@@ -42,15 +43,12 @@ import "react-chrono/dist/style.css";
 import { getMatterHistory, getFilteredMatters } from "../api";
 
 function Dashboard({ pastSixMonOfMatters, loading }) {
-  console.log(
-    "Here are the past 6mon of patters inside dashboard: ",
-    pastSixMonOfMatters
-  );
-
   const [searchBy, setSearchBy] = useState("Law #");
   const [query, setQuery] = useState(null);
   const [filteredMatters, setFilteredMatters] = useState(null);
   const [matterHistory, setMatterHistory] = useState(null);
+  const [matterHistoryFile, setMatterHistoryFile] = useState(null);
+
   const [watchlist, setWatchlist] = useState(() => {
     return JSON.parse(localStorage.getItem("watchlist") || "[]");
   });
@@ -67,13 +65,14 @@ function Dashboard({ pastSixMonOfMatters, loading }) {
   }
 `;
 
-  async function handleGetMatterHistory(matterId) {
+  async function handleGetMatterHistory(matterId, matterFile) {
     setLoadingHistory(true);
     try {
+      setMatterHistoryFile(matterFile);
       const history = await getMatterHistory(matterId);
+
       setMatterHistory(history);
     } catch (error) {
-      console.error("Failed to fetch matter history:", error);
     } finally {
       setLoadingHistory(false);
     }
@@ -89,14 +88,17 @@ function Dashboard({ pastSixMonOfMatters, loading }) {
   }
 
   async function handleSearch() {
+    setMatterHistory(null);
+    setMatterHistoryFile(null);
+
     const searchQuery = query?.trim();
     let filter;
     switch (searchBy) {
       case "Law #":
-        filter = `MatterEnactmentNumber+eq+'${searchQuery}'`;
+        filter = `substringof('${searchQuery}',MatterEnactmentNumber)`;
         break;
       case "File #":
-        filter = `MatterFile+eq+'${searchQuery}'`;
+        filter = `substringof('${searchQuery}',MatterFile)`;
         break;
       case "Title":
         filter = `substringof('${searchQuery}',MatterTitle)`;
@@ -108,10 +110,10 @@ function Dashboard({ pastSixMonOfMatters, loading }) {
         filter = `substringof('${searchQuery}',MatterEXText5)`;
         break;
       case "Committee":
-        filter = `MatterBodyName+eq+'${searchQuery}'`;
+        filter = `substringof('${searchQuery}',MatterBodyName)`;
         break;
       default:
-        filter = `MatterEnactmentNumber+eq+'${searchQuery}'`;
+        filter = `substringof('${searchQuery}',MatterEnactmentNumber)`;
     }
     setLoadingSearch(true);
     try {
@@ -126,19 +128,24 @@ function Dashboard({ pastSixMonOfMatters, loading }) {
 
   return (
     <Flex
-      direction={{ base: "column", md: "row" }}
+      flexDirection="row"
       gap={4}
       p={4}
       flex={1}
       wrap="wrap"
       bg="gray.50"
+      sx={{
+        "@media (max-width: 950px)": {
+          flexDirection: "column",
+        },
+      }}
     >
       <Card flex={1} maxW="100%">
         <CardHeader pb={4}>
           <Flex justify="space-between" align="center" mb={3}>
             <Heading size="md">Matters</Heading>
             <ChakraTooltip
-              label="This section shows your matters"
+              label="Find a matter to view its history or add to your watch list"
               fontSize="sm"
               hasArrow
               placement="top"
@@ -171,26 +178,28 @@ function Dashboard({ pastSixMonOfMatters, loading }) {
                   >
                     <Text isTruncated>{searchBy}</Text>
                   </MenuButton>
-                  <MenuList portal sx={{ zIndex: 1000 }}>
-                    <MenuItem onClick={() => setSearchBy("Law #")}>
-                      Law #
-                    </MenuItem>
-                    <MenuItem onClick={() => setSearchBy("File #")}>
-                      File #
-                    </MenuItem>
-                    <MenuItem onClick={() => setSearchBy("Title")}>
-                      Title
-                    </MenuItem>
-                    <MenuItem onClick={() => setSearchBy("Name")}>
-                      Name
-                    </MenuItem>
-                    <MenuItem onClick={() => setSearchBy("Summary")}>
-                      Summary
-                    </MenuItem>
-                    <MenuItem onClick={() => setSearchBy("Committee")}>
-                      Committee
-                    </MenuItem>
-                  </MenuList>
+                  <Portal>
+                    <MenuList zIndex={1500}>
+                      <MenuItem onClick={() => setSearchBy("Law #")}>
+                        Law #
+                      </MenuItem>
+                      <MenuItem onClick={() => setSearchBy("File #")}>
+                        File #
+                      </MenuItem>
+                      <MenuItem onClick={() => setSearchBy("Title")}>
+                        Title
+                      </MenuItem>
+                      <MenuItem onClick={() => setSearchBy("Name")}>
+                        Name
+                      </MenuItem>
+                      <MenuItem onClick={() => setSearchBy("Summary")}>
+                        Summary
+                      </MenuItem>
+                      <MenuItem onClick={() => setSearchBy("Committee")}>
+                        Committee
+                      </MenuItem>
+                    </MenuList>
+                  </Portal>
                 </Menu>
               </InputLeftElement>
 
@@ -223,24 +232,6 @@ function Dashboard({ pastSixMonOfMatters, loading }) {
                 />
               </InputRightElement>
             </InputGroup>
-
-            <Popover placement="bottom-start" closeOnBlur>
-              <PopoverTrigger>
-                <Button padding={1}>
-                  <Funnel color="grey" size={18} />
-                </Button>
-              </PopoverTrigger>
-
-              <PopoverContent w="200px" p={2}>
-                <PopoverBody>
-                  <VStack align="start" spacing={2}>
-                    <Checkbox size="sm">Open Matters</Checkbox>
-                    <Checkbox size="sm">Closed Matters</Checkbox>
-                    <Checkbox size="sm">High Priority</Checkbox>
-                  </VStack>
-                </PopoverBody>
-              </PopoverContent>
-            </Popover>
           </Flex>
         </CardHeader>
         <Divider
@@ -270,124 +261,6 @@ function Dashboard({ pastSixMonOfMatters, loading }) {
             >
               {" "}
             </Box>
-          ) : filteredMatters ? (
-            filteredMatters?.length > 0 ? (
-              <VStack
-                spacing={2}
-                w={"100%"}
-                flex="1"
-                borderRadius="md"
-                bgColor={"gray.200"}
-                p={2}
-                align={"stretch"}
-                overflowY="auto"
-              >
-                {filteredMatters.map((matter, idx) => (
-                  <Card
-                    className="filtered-matter-card"
-                    key={idx}
-                    as="article"
-                    p={4}
-                    pr={5}
-                    borderRadius="md"
-                    bg="white"
-                    boxShadow="sm"
-                    _hover={{
-                      boxShadow: "md",
-                      transform: "translateY(-2px)",
-                      transition: "all 0.2s ease-in-out",
-                    }}
-                    cursor="pointer"
-                    position="relative"
-                    flex={1}
-                    onClick={() => handleGetMatterHistory(matter.MatterId)}
-                  >
-                    {" "}
-                    <ChakraTooltip
-                      label="Add to watchlist"
-                      fontSize="sm"
-                      hasArrow
-                      placement="top"
-                    >
-                      <Box
-                        position="absolute"
-                        top={1}
-                        right={1}
-                        className="add-to-history"
-                        cursor={"pointer"}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleAddMatterToWatchList(matter);
-                        }}
-                      >
-                        <Icon
-                          as={ClockPlus}
-                          w={5}
-                          h={5}
-                          color="gray.400"
-                          _hover={{ color: "gray.600" }}
-                        />
-                      </Box>
-                    </ChakraTooltip>
-                    <Heading
-                      size="sm"
-                      isTruncated
-                      mb={1}
-                      title={matter.MatterTitle}
-                    >
-                      {matter.MatterTitle}
-                    </Heading>
-                    <Text fontSize="sm" color="gray.600">
-                      File: {matter.MatterFile}
-                    </Text>
-                    <Text fontSize="sm" color="gray.500">
-                      Status: {matter.Status || "N/A"} | Committee:{" "}
-                      {matter.Committee || "N/A"}
-                    </Text>
-                  </Card>
-                ))}
-              </VStack>
-            ) : (
-              <Box
-                p={4}
-                bgColor={"gray.200"}
-                borderRadius="md"
-                shadow="md"
-                w="100%"
-                h="100%"
-                display="flex"
-                flexDirection="column"
-              >
-                <Flex
-                  flex="1"
-                  direction="column"
-                  align="center"
-                  justify="center"
-                  py={10}
-                  px={4}
-                  bg="gray.50"
-                  borderRadius="md"
-                  border="1px dashed"
-                  borderColor="gray.300"
-                  textAlign="center"
-                >
-                  <Icon
-                    as={InfoOutlineIcon}
-                    w={8}
-                    h={8}
-                    color="gray.400"
-                    mb={2}
-                  />
-                  <Text fontSize="lg" fontWeight="semibold" color="gray.600">
-                    No matters found
-                  </Text>
-                  <Text fontSize="sm" color="gray.500">
-                    Try adjusting your search query, search type, or check back
-                    later.
-                  </Text>
-                </Flex>
-              </Box>
-            )
           ) : matterHistory ? (
             <Box
               p={6}
@@ -398,11 +271,15 @@ function Dashboard({ pastSixMonOfMatters, loading }) {
               h="100%"
               display="flex"
               flexDirection="column"
+              overflow="hidden"
             >
               <HStack mb={4}>
                 <Button
                   padding={1}
-                  onClick={() => setMatterHistory(null)}
+                  onClick={() => {
+                    setMatterHistoryFile(null);
+                    setMatterHistory(null);
+                  }}
                   size="sm"
                   color="gray.500"
                   variant="ghost"
@@ -412,13 +289,20 @@ function Dashboard({ pastSixMonOfMatters, loading }) {
                 </Button>
 
                 <Text fontSize="xl" fontWeight="bold">
-                  Matter History
+                  {`Matter History - ${matterHistoryFile}`}
                 </Text>
               </HStack>
 
-              <Box w="100%" flex="1">
+              <Box
+                w="100%"
+                flex="1"
+                overflowY="auto"
+                overflowX="hidden"
+                pr={2}
+                maxH="70dvh"
+              >
                 {matterHistory && matterHistory.length > 0 ? (
-                  <Box className="chrono-wrapper" w="100%" h="100%">
+                  <Box className="chrono-wrapper" w="100%" h={"100%"}>
                     <Chrono
                       items={matterHistory.map((history) => ({
                         title: history.MatterHistoryActionDate
@@ -473,6 +357,128 @@ function Dashboard({ pastSixMonOfMatters, loading }) {
                 )}
               </Box>
             </Box>
+          ) : filteredMatters ? (
+            filteredMatters?.length > 0 ? (
+              <VStack
+                spacing={2}
+                w={"100%"}
+                flex="1"
+                borderRadius="md"
+                bgColor={"gray.200"}
+                p={2}
+                align={"stretch"}
+                overflowY="auto"
+              >
+                {filteredMatters.map((matter, idx) => (
+                  <Card
+                    className="filtered-matter-card"
+                    key={idx}
+                    as="article"
+                    p={4}
+                    pr={5}
+                    minH="6rem"
+                    maxH="7rem"
+                    borderRadius="md"
+                    bg="white"
+                    boxShadow="sm"
+                    _hover={{
+                      boxShadow: "md",
+                      transform: "translateY(-2px)",
+                      transition: "all 0.2s ease-in-out",
+                    }}
+                    cursor="pointer"
+                    position="relative"
+                    flex={1}
+                    onClick={() =>
+                      handleGetMatterHistory(matter.MatterId, matter.MatterFile)
+                    }
+                  >
+                    {" "}
+                    <ChakraTooltip
+                      label="Add to watchlist"
+                      fontSize="sm"
+                      hasArrow
+                      placement="top"
+                    >
+                      <Box
+                        position="absolute"
+                        top={1}
+                        right={1}
+                        className="add-to-history"
+                        cursor={"pointer"}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAddMatterToWatchList(matter);
+                        }}
+                      >
+                        <Icon
+                          as={ClockPlus}
+                          w={5}
+                          h={5}
+                          color="gray.400"
+                          _hover={{ color: "gray.600" }}
+                        />
+                      </Box>
+                    </ChakraTooltip>
+                    <Heading
+                      size="sm"
+                      isTruncated
+                      mb={1}
+                      title={matter.MatterTitle}
+                    >
+                      {matter.MatterTitle}
+                    </Heading>
+                    <Text fontSize="sm" color="gray.600">
+                      File: {matter.MatterFile}
+                    </Text>
+                    <Text fontSize="sm" color="gray.500" isTruncated>
+                      Status: {matter.MatterStatusName || "N/A"} | Committee:{" "}
+                      {matter.MatterBodyName || "N/A"}
+                    </Text>
+                  </Card>
+                ))}
+              </VStack>
+            ) : (
+              <Box
+                p={4}
+                bgColor={"gray.200"}
+                borderRadius="md"
+                shadow="md"
+                w="100%"
+                h="100%"
+                display="flex"
+                flexDirection="column"
+              >
+                <Flex
+                  flex="1"
+                  direction="column"
+                  align="center"
+                  justify="center"
+                  py={10}
+                  px={4}
+                  bg="gray.50"
+                  borderRadius="md"
+                  border="1px dashed"
+                  borderColor="gray.300"
+                  textAlign="center"
+                >
+                  <Icon
+                    as={InfoOutlineIcon}
+                    w={8}
+                    h={8}
+                    color="gray.400"
+                    mb={2}
+                  />
+                  <Text fontSize="lg" fontWeight="semibold" color="gray.600">
+                    No matters found
+                  </Text>
+                  <Text fontSize="sm" color="gray.500">
+                    Try adjusting your search query, search type, or check back
+                    later.
+                  </Text>
+                </Flex>
+              </Box>
+            )
           ) : pastSixMonOfMatters?.length > 0 ? (
             <VStack
               spacing={2}
@@ -491,6 +497,8 @@ function Dashboard({ pastSixMonOfMatters, loading }) {
                   as="article"
                   p={4}
                   pr={5}
+                  minH="6rem"
+                  maxH="7rem"
                   borderRadius="md"
                   bg="white"
                   boxShadow="sm"
@@ -502,7 +510,9 @@ function Dashboard({ pastSixMonOfMatters, loading }) {
                   cursor="pointer"
                   position="relative"
                   flex={1}
-                  onClick={() => handleGetMatterHistory(matter.MatterId)}
+                  onClick={() =>
+                    handleGetMatterHistory(matter.MatterId, matter.MatterFile)
+                  }
                 >
                   {" "}
                   <ChakraTooltip
@@ -542,9 +552,9 @@ function Dashboard({ pastSixMonOfMatters, loading }) {
                   <Text fontSize="sm" color="gray.600">
                     File: {matter.MatterFile}
                   </Text>
-                  <Text fontSize="sm" color="gray.500">
-                    Status: {matter.Status || "N/A"} | Committee:{" "}
-                    {matter.Committee || "N/A"}
+                  <Text fontSize="sm" color="gray.500" isTruncated>
+                    Status: {matter.MatterStatusName || "N/A"} | Committee:{" "}
+                    {matter.MatterBodyName || "N/A"}
                   </Text>
                 </Card>
               ))}
@@ -572,16 +582,55 @@ function Dashboard({ pastSixMonOfMatters, loading }) {
               </Text>
             </Flex>
           )}
+          {!matterHistory && !matterHistoryFile && (
+            <Box
+              mt={2}
+              py={0}
+              textAlign="center"
+              fontSize="sm"
+              fontWeight="medium"
+              color="gray.500"
+              borderTop="1px solid"
+              borderColor="gray.300"
+            >
+              Showing up to last 1000 matters
+            </Box>
+          )}
         </CardBody>
       </Card>
       <Card minW={"15rem"} minH="200px" maxW="100%">
         <CardHeader pb={4}>
-          <Flex direction="column" gap={3}>
+          <Flex justify="space-between" align="center">
             <Heading size="md">Watchlist</Heading>
+            <ChakraTooltip
+              label="List of matters you are tracking"
+              fontSize="sm"
+              hasArrow
+              placement="top"
+            >
+              <QuestionIcon
+                w={5}
+                h={5}
+                color="gray.500"
+                cursor="pointer"
+                _hover={{ color: "rgb(81, 106, 176)" }}
+              />
+            </ChakraTooltip>
           </Flex>
         </CardHeader>
-        <Divider w="90%" m="auto" borderColor="gray.200" borderWidth="1px" />
-        <CardBody display="flex" flexDir="column" pt={4} overflowY="auto">
+        <Divider
+          w="90%"
+          margin="0 auto"
+          borderColor="gray.200"
+          borderWidth="1px"
+        />
+        <CardBody
+          display="flex"
+          flexDir="column"
+          pt={4}
+          overflowY="auto"
+          maxH="82dvh"
+        >
           {loadingWatchList ? (
             <Box
               flex="1"
@@ -591,96 +640,98 @@ function Dashboard({ pastSixMonOfMatters, loading }) {
               animation={`${shimmer} 1.5s infinite`}
             />
           ) : (
-            <Box
-              p={2}
-              bgColor={"gray.200"}
+            <VStack
+              spacing={2}
+              w={"100%"}
+              h={"100%"}
+              flex="1"
               borderRadius="md"
-              shadow="md"
-              w="100%"
-              h="100%"
-              display="flex"
-              flexDirection="column"
+              bgColor={"gray.200"}
+              p={2}
+              align={"stretch"}
+              overflowY="auto"
             >
-              <VStack spacing={2} align="start" w="100%">
-                {watchlist.map((matter, idx) => (
-                  <Card
-                    className="watchlist-matter-card"
-                    key={idx}
-                    as="article"
-                    p={2}
-                    pr={5}
-                    borderRadius="md"
-                    bg="white"
-                    boxShadow="sm"
-                    _hover={{
-                      boxShadow: "md",
-                      transform: "translateY(-1px)",
-                      transition: "all 0.2s ease-in-out",
-                    }}
-                    cursor="pointer"
-                    position="relative"
-                    minH="4rem"
-                    maxH="5rem"
-                    w={{ base: "100%", md: "15rem" }}
+              {watchlist.map((matter, idx) => (
+                <Card
+                  className="watchlist-matter-card"
+                  key={idx}
+                  as="article"
+                  p={2}
+                  pr={5}
+                  borderRadius="md"
+                  bg="white"
+                  boxShadow="sm"
+                  _hover={{
+                    boxShadow: "md",
+                    transform: "translateY(-1px)",
+                    transition: "all 0.2s ease-in-out",
+                  }}
+                  cursor="pointer"
+                  position="relative"
+                  minH="4.4rem"
+                  maxH="5rem"
+                  w={{ base: "100%", lg: "15rem" }}
+                  onClick={() =>
+                    handleGetMatterHistory(matter.MatterId, matter.MatterFile)
+                  }
+                >
+                  <ChakraTooltip
+                    label="Remove from watchlist"
+                    fontSize="xs"
+                    hasArrow
+                    placement="top"
                   >
-                    <ChakraTooltip
-                      label="Remove from watchlist"
-                      fontSize="xs"
-                      hasArrow
-                      placement="top"
-                    >
-                      <Box
-                        position="absolute"
-                        top={1}
-                        right={1}
-                        className="remove-from-history"
-                        cursor="pointer"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setWatchlist((prev) =>
-                            prev.filter(
+                    <Box
+                      position="absolute"
+                      top={1}
+                      right={1}
+                      className="remove-from-history"
+                      cursor="pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setWatchlist((prev) =>
+                          prev.filter(
+                            (item) => item.MatterId !== matter.MatterId
+                          )
+                        );
+                        localStorage.setItem(
+                          "watchlist",
+                          JSON.stringify(
+                            watchlist.filter(
                               (item) => item.MatterId !== matter.MatterId
                             )
-                          );
-                          localStorage.setItem(
-                            "watchlist",
-                            JSON.stringify(
-                              watchlist.filter(
-                                (item) => item.MatterId !== matter.MatterId
-                              )
-                            )
-                          );
-                        }}
-                      >
-                        <Icon
-                          as={Trash2}
-                          w={4}
-                          h={4}
-                          color="gray.400"
-                          _hover={{ color: "red.500" }}
-                        />
-                      </Box>
-                    </ChakraTooltip>
-
-                    <Heading
-                      size="xs"
-                      isTruncated
-                      mb={0.5}
-                      title={matter.MatterTitle}
+                          )
+                        );
+                      }}
                     >
-                      {matter.MatterTitle}
-                    </Heading>
-                    <Text fontSize="xs" color="gray.600" isTruncated>
-                      File: {matter.MatterFile}
-                    </Text>
-                    <Text fontSize="xs" color="gray.500" isTruncated>
-                      Status: {matter.Status || "N/A"} | Committee:{" "}
-                      {matter.Committee || "N/A"}
-                    </Text>
-                  </Card>
-                ))}
-              </VStack>
-            </Box>
+                      <Icon
+                        as={Trash2}
+                        w={4}
+                        h={4}
+                        color="gray.400"
+                        _hover={{ color: "red.500" }}
+                      />
+                    </Box>
+                  </ChakraTooltip>
+
+                  <Heading
+                    size="xs"
+                    isTruncated
+                    mb={1}
+                    title={matter.MatterTitle}
+                  >
+                    {matter.MatterTitle}
+                  </Heading>
+                  <Text fontSize="xs" color="gray.600" isTruncated>
+                    File: {matter.MatterFile}
+                  </Text>
+                  <Text fontSize="xs" color="gray.500" isTruncated>
+                    Status: {matter.MatterStatusName || "N/A"} | Committee:{" "}
+                    {matter.MatterBodyName || "N/A"}
+                  </Text>
+                </Card>
+              ))}
+            </VStack>
           )}
         </CardBody>
       </Card>
