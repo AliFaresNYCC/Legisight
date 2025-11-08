@@ -37,7 +37,7 @@ import {
 } from "@chakra-ui/react";
 import { keyframes } from "@emotion/react";
 import { ClockPlus, Funnel, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Chrono } from "react-chrono";
 import "react-chrono/dist/style.css";
 import { getMatterHistory, getFilteredMatters } from "../api";
@@ -88,6 +88,9 @@ function Dashboard({ lastThousandMatters, loading }) {
   }
 
   async function handleSearch() {
+    if (!query || query.trim() === "") {
+      return;
+    }
     setMatterHistory(null);
     setMatterHistoryFile(null);
 
@@ -125,6 +128,13 @@ function Dashboard({ lastThousandMatters, loading }) {
       setLoadingSearch(false);
     }
   }
+
+  useEffect(() => {
+    if (!query || query.trim() === "") {
+      setFilteredMatters(null);
+      return;
+    }
+  }, [query]);
 
   return (
     <Flex
@@ -221,6 +231,7 @@ function Dashboard({ lastThousandMatters, loading }) {
                   },
                 }}
               />
+
               <InputRightElement
                 w={"fit-content"}
                 pr={2}
